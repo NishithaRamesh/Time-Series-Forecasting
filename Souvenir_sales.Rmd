@@ -1,0 +1,236 @@
+---
+title: "Souvenir Sales"
+output: html_notebook
+---
+
+Libraries used:
+```{r}
+library(forecast)
+library(ggplot2)
+library(tseries)
+library(MLmetrics)
+```
+
+
+
+
+Readind the Souvenir sales txt data into R
+```{r}
+souvenir = scan("D:\\GL_PGP\\Assignments\\Time series forecasting\\fancy.dat.txt")
+head(souvenir)
+```
+
+Converting to Timeseries object
+```{r}
+souvenir.ts = ts(souvenir, start = c(1987,1), frequency = 12)
+souvenir.ts
+```
+
+
+```{r}
+plot(souvenir.ts)
+```
+
+```{r}
+library(ggplot2)
+library(forecast)
+ggmonthplot(souvenir.ts)
+ggseasonplot(souvenir.ts)
+```
+
+
+```{r}
+decompose(souvenir.ts,type="a")
+plot(decompose(souvenir.ts,type="a"))
+
+decompose(souvenir.ts,type="m")
+plot(decompose(souvenir.ts,type="m"))
+```
+
+
+Time series Stationary check
+```{r}
+plot(souvenir.ts)
+library(tseries)
+help(adf.test)
+adf.test(souvenir.ts, k=12)
+
+plot(diff(souvenir.ts))
+adf.test(diff(souvenir.ts, k=12))
+
+
+```
+
+
+Train-Test split
+```{r}
+souvenir.train=window(souvenir.ts,end=c(1991,12))
+souvenir.train
+souvenir.test=window(souvenir.ts,start=c(1992,1))
+souvenir.test
+
+```
+
+
+Holt-Winter (Triple Exponential Smoothing) Model
+```{r}
+
+summary(hw(souvenir.train))
+
+souvenir.forecast=hw(souvenir.train)$mean
+souvenir.forecast
+
+
+```
+
+
+```{r}
+summary(hw(souvenir.train, seasonal = "a", alpha = 0.56))
+
+souvenir.forecast_a=hw(souvenir.train, seasonal = "a", alpha = 0.56)$mean
+souvenir.forecast_a
+
+```
+
+
+```{r}
+summary(hw(souvenir.train,seasonal="m"))
+souvenir.forecast_m=hw(souvenir.train,seasonal="m")$mean
+souvenir.forecast_m
+
+```
+
+
+```{r}
+
+summary(hw(souvenir.train,seasonal="m", alpha = 0.23, beta = 0.03))
+souvenir.forecast_m1=hw(souvenir.train,seasonal="m", alpha = 0.23, beta = 0.03)$mean
+souvenir.forecast_m1
+
+```
+
+
+Plotting the forecast on the Test data
+```{r}
+
+plot(souvenir.test)
+lines(souvenir.forecast,col=2)
+
+plot(souvenir.test)
+lines(souvenir.forecast_m,col=4)
+
+
+plot(souvenir.test)
+lines(souvenir.forecast_m,col=5)
+
+```
+
+
+Validation against actual using MAPE
+```{r}
+#install.packages("MLmetrics")
+library(MLmetrics)
+
+MAPE(souvenir.forecast, souvenir.test)
+MAPE(souvenir.forecast_m, souvenir.test)
+MAPE(souvenir.forecast_m1, souvenir.test)
+
+
+```
+
+
+ARIMA Model
+```{r}
+souvenir.auto=auto.arima(souvenir.train)
+souvenir.auto
+
+souvenir.forecast_auto=forecast(souvenir.auto)$mean
+souvenir.forecast_auto
+```
+
+
+```{r}
+residuals(souvenir.auto)
+hist(residuals(souvenir.auto))
+```
+
+
+```{r}
+acf(diff(souvenir.train))
+pacf(diff(souvenir.train))
+```
+
+
+```{r}
+souvenir.model=arima(souvenir.train,order=c(2,1,1),seasonal=list(order=c(0,1,1),period=12))
+souvenir.model
+souvenir.forecast_arima=forecast(souvenir.model)$mean
+souvenir.forecast_arima
+```
+
+```{r}
+residuals(souvenir.model)
+hist(residuals(souvenir.model))
+```
+
+
+```{r}
+souvenir.model_2=arima(souvenir.train,order=c(2,0,0),seasonal=list(order=c(0,1,1),period=12))
+souvenir.model_2
+souvenir.forecast_arima_2=forecast(souvenir.model_2)$mean
+souvenir.forecast_arima_2
+```
+
+
+```{r}
+residuals(souvenir.model_2)
+hist(residuals(souvenir.model_2))
+```
+
+
+
+
+```{r}
+MAPE(souvenir.forecast_auto, souvenir.test)
+MAPE(souvenir.forecast_arima, souvenir.test)
+MAPE(souvenir.forecast_arima_2, souvenir.test)
+```
+
+
+
+
+```{r}
+hw(souvenir.ts,seasonal="m", alpha = 0.23, beta = 0.03, h=60)
+hw(souvenir.ts,seasonal="m", alpha = 0.23, beta = 0.03, h=60)$mean
+plot(hw(souvenir.ts,seasonal="m", alpha = 0.23, beta = 0.03, h=60))
+
+
+```
+
+```{r}
+
+hw(souvenir.ts, h=60)
+hw(souvenir.ts, h=60)$mean
+plot(hw(souvenir.ts, h=60))
+
+```
+
+
+
+```{r}
+forecast(souvenir.ts,model= souvenir.auto, h=60)
+forecast(souvenir.ts,model= souvenir.auto, h=60)$mean
+plot(forecast(souvenir.ts,model= souvenir.auto, h=60))
+
+
+```
+
+
+```{r}
+forecast(souvenir.ts,model= souvenir.model, h=60)
+forecast(souvenir.ts,model= souvenir.model, h=60)$mean
+plot(forecast(souvenir.ts,model= souvenir.model, h=60))
+
+
+```
+
